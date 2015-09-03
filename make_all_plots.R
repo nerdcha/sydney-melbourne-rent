@@ -6,19 +6,29 @@ library(zoo)
 
 #### Utility functions ####
 
-savePlotAsSvg <- function(plotToSave, fileName, widthInPx=300, heightInPx=250){
+savePlotAsSvg <- function(plotToSave, baseFileName, widthInPx=300, heightInPx=250,
+                          pngFallback=TRUE, fallbackWidth=1200, fallbackHeight=1000){
   plotDpi <- 72
   # Subtract a fudge factor to make sure we're just _inside_ the bounding box
   plotWidthInches <- widthInPx / plotDpi * 0.99
   plotHeightInches <- heightInPx / plotDpi * 0.99
+  
+  fallbackDpi <- 300
+  plotWidthFallbackInches <- fallbackWidth / fallbackDpi
+  plotHeightFallbackInches <- fallbackHeight / fallbackDpi
   
   svgDevice <- function(file, width, height) {
     library(RSvgDevice)
     devSVG(file = file, width = width, height = height, bg = "white", fg = "black",
            onefile = TRUE, xmlHeader = TRUE)
   }
-  ggsave(plot=plotToSave, filename=fileName, device=svgDevice,
+  
+  ggsave(plot=plotToSave, filename=paste0(baseFileName, ".svg"), device=svgDevice,
          width=plotWidthInches, height=plotHeightInches, units="in")
+  if(pngFallback){
+    ggsave(plot=plotToSave, filename=paste0(baseFileName, ".png"),
+           width=plotWidthFallbackInches, height=plotHeightFallbackInches, units="in")
+  }
 }
 
 #### Data ingest and tidying: Sydney ####
@@ -148,7 +158,7 @@ combinedYieldPlot <- ggplot(makeYieldData(houseRentData, houseSalesData) %>%
   scale_colour_manual(values=colourPalette) +
   guides(colour="none") +
   geom_text(data=yieldLabels, aes(label=label))
-savePlotAsSvg(combinedYieldPlot, "yields.svg")
+savePlotAsSvg(combinedYieldPlot, "yields")
 
 ## Sydney rents: houses, by location
 
@@ -181,7 +191,7 @@ twoCitiesRentPlot <- ggplot(houseRentData %>% filter(location == "Inner Ring") %
   xlab('') + ylab("$/wk") +
   ggtitle("Median Rents: Inner-Ring Houses")
 
-savePlotAsSvg(twoCitiesRentPlot, "medianRent.svg")
+savePlotAsSvg(twoCitiesRentPlot, "medianRent")
 
 ## Rental affordability measures: data ingest and preparation
 
@@ -231,7 +241,7 @@ rentSharePlot <- ggplot(rentShareData) + aes(x=date, y=wageShare, colour=locatio
   ggtitle("Rents: Share of Average Wage") +
   geom_text(data=rentShareLabels, aes(label=label))
 
-savePlotAsSvg(rentSharePlot, "rentShare.svg")
+savePlotAsSvg(rentSharePlot, "rentShare")
 
 
 ## Alternative version: apartments and houses in Sydney
